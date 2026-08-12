@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alpha Profiler DISC — Sistema Completo de Gestão de RH</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Supabase JS Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- html2pdf.js CDN for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    :root {
+      --brand-dark: #0F172A;
+      --brand-purple: #5B79DD;
+      --brand-primary: #4F46E5;
+      --brand-surface: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --border-color: #E2E8F0;
+      --text-muted: #64748B;
+      --color-mais: #10B981;
+      --bg-mais: #ECFDF5;
+      --border-mais: #A7F3D0;
+      --color-menos: #EF4444;
+      --bg-menos: #FEF2F2;
+      --border-menos: #FECDD3;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--brand-surface);
+      color: var(--brand-dark);
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    header {
+      width: 100%;
+      background: var(--brand-purple);
+      color: #FFFFFF;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      box-shadow: 0 4px 14px rgba(91, 121, 221, 0.25);
+    }
+
+    .grid-4-col {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+
+    .grid-2-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .grid-2-1-col {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 900px) {
+      .grid-4-col { grid-template-columns: repeat(2, 1fr); }
+      .grid-2-col, .grid-2-1-col { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .grid-4-col { grid-template-columns: 1fr; }
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 12px;
+      border: none;
+      background: var(--brand-purple);
+      color: #FFFFFF;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 10px 20px -5px rgba(91, 121, 221, 0.35);
+      transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      padding: 24px;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.02);
+    }
+
+    .badge-profile {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 42px;
+      height: 38px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 13px;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 0 12px;
+    }
+
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      background: var(--card-bg);
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.03);
+    }
+
+    table {
+      width: 100%;
+      min-width: 800px;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      background: #F8FAFC;
+      border-bottom: 1.5px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      padding: 16px 24px;
+    }
+
+    td {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .adjective-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px;
+      border-radius: 16px;
+      margin-bottom: 12px;
+      border: 1.5px solid var(--border-color);
+      background: var(--card-bg);
+      transition: all 0.2s;
+    }
+
+    .adjective-row.mais {
+      background: var(--bg-mais);
+      border-color: var(--border-mais);
+    }
+
+    .adjective-row.menos {
+      background: var(--bg-menos);
+      border-color: var(--border-menos);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: #FFFFFF;
+      color: var(--brand-dark);
+      font-weight: 700;
+    }
+
+    /* Estilos para o PDF de 6 páginas */
+    .pdf-page-container {
+      width: 210mm;
+      min-height: 297mm;
+      background: #FFFFFF;
+      box-sizing: border-box;
+      padding: 20mm;
+      margin: 0 auto;
+      page-break-after: always;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================
+       TOP HEADER
+       ============================================================ -->
+  <header>
+    <div style="display: flex; align-items: center; gap: 24px;">
+      <div style="display: flex; align-items: center; gap: 10px; cursor: pointer;" onclick="navToDashboard()">
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: #FFFFFF; color: var(--brand-purple); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px;">
+          A
+        </div>
+        <span style="font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">
+          Alpha <span style="opacity: 0.85; font-weight: 500;">Profiler DISC</span>
+        </span>
+      </div>
+
+      <!-- Authenticated Menu -->
+      <div id="auth-nav-menu" class="hidden" style="display: flex; align-items: center; gap: 8px;">
+        <button onclick="navToDashboard()" class="btn-primary" style="background: rgba(255,255,255,0.25); border: none;">
+          <i data-lucide="users" size="15"></i> Painel do RH (Gestão)
+        </button>
+        <button onclick="startNewTestFlow()" class="btn-primary" style="background: transparent; border: none;">
+          <i data-lucide="plus-circle" size="15"></i> Aplicar Mapeamento DISC
+        </button>
+      </div>
+    </div>
+
+    <!-- Status & Auth State -->
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div id="supabase-status-badge" style="display: inline-flex; align-items: center; gap: 6px; background: #ECFDF5; color: #059669; padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace;">
+        <i data-lucide="database" size="12"></i> <span>Supabase Conectado</span>
+      </div>
+
+      <div id="user-info-badge" class="hidden" style="text-align: right; font-size: 13px; line-height: 1.4;">
+        <div style="font-weight: 700;">Alpha Psicologia LTDA</div>
+        <div id="user-email-text" style="font-size: 11px; opacity: 0.85;">rh@alphapsicologia.com.br</div>
+      </div>
+
+      <button id="auth-logout-btn" class="hidden" onclick="handleLogout()" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 999px; border: none; background: #EF4444; color: #FFFFFF; font-weight: 800; font-size: 13px; cursor: pointer;">
+        <i data-lucide="log-out" size="15"></i> Sair
+      </button>
+
+      <div id="locked-auth-badge" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.2); color: #FFFFFF; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700;">
+        <i data-lucide="lock" size="13"></i> Acesso Autenticado
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       1. LOGIN / SIGNUP GATEKEEPER SCREEN
+       ============================================================ -->
+  <div id="screen-login" style="width: 100%; max-width: 440px; margin: 60px auto; padding: 0 20px;">
+    <div class="card" style="padding: 40px 32px; text-align: center; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.06);">
+      <div style="width: 60px; height: 60px; border-radius: 20px; background: rgba(91, 121, 221, 0.15); color: var(--brand-purple); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+        <i data-lucide="lock" size="28"></i>
+      </div>
+
+      <h2 id="auth-title" style="font-family: 'Outfit', sans-serif; font-size: 26px; font-weight: 800; margin-bottom: 8px;">
+        Autenticação de Acesso RH
+      </h2>
+      <p style="font-size: 14px; color: var(--text-muted); line-height: 1.55; margin-bottom: 24px;">
+        Acesse a plataforma corporativa para gerenciar mapeamentos comportamentais, aplicar testes e baixar laudos.
+      </p>
+
+      <div id="auth-error-alert" class="hidden" style="background: var(--bg-menos); border: 1px solid var(--border-menos); color: var(--color-menos); padding: 12px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; margin-bottom: 18px; text-align: left;">
+        ⚠️ <span id="auth-error-msg"></span>
+      </div>
+
+      <form id="auth-form" style="text-align: left;">
+        <div id="field-name-container" class="hidden" style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px;">Nome Completo do Gestor</label>
+          <input type="text" id="input-auth-name" placeholder="Dra. Mariana Costa" style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 1.5px solid var(--border-color); font-size: 14px; outline: none;" />
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px;">E-mail Corporativo</label>
+          <input type="email" id="input-auth-email" required placeholder="seu.email@empresa.com.br" style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 1.5px solid var(--border-color); font-size: 14px; outline: none;" />
+        </div>
+
+        <div style="margin-bottom: 24px;">
+          <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px;">Senha de Acesso</label>
+          <input type="password" id="input-auth-password" required placeholder="••••••••" style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 1.5px solid var(--border-color); font-size: 14px; outline: none;" />
+        </div>
+
+        <button type="submit" id="btn-submit-auth" class="btn-primary" style="width: 100%; padding: 14px; font-size: 15px; margin-bottom: 16px;">
+          Entrar no Sistema
+        </button>
+      </form>
+
+      <div style="border-top: 1px solid var(--border-color); padding-top: 18px; margin-top: 8px;">
+        <button id="toggle-auth-mode-btn" style="background: none; border: none; color: var(--brand-primary); font-size: 13px; font-weight: 700; cursor: pointer;">
+          Criar Nova Conta de RH no Supabase
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       2. HR MANAGEMENT DASHBOARD
+       ============================================================ -->
+  <div id="screen-dashboard" class="hidden" style="width: 100%; max-width: 1600px; margin: 0 auto; padding: 32px 32px 60px;">
+    <!-- Dashboard Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <h1 style="font-family: 'Outfit', sans-serif; font-size: 30px; font-weight: 800; margin: 0;">
+          Profiler — Gestão de Mapeamentos Comportamentais
+        </h1>
+        <p style="font-size: 15px; color: var(--text-muted); margin-top: 6px;">
+          Alpha Psicologia LTDA • Sessão ativa como <strong id="active-user-display">rh@alphapsicologia.com.br</strong>.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 12px;">
+        <button onclick="startNewTestFlow()" class="btn-primary" style="background: #FFFFFF; color: var(--brand-dark); border: 1.5px solid var(--border-color); box-shadow: none;">
+          <i data-lucide="plus-circle" size="16" color="#4F46E5"></i> Aplicar Teste DISC
+        </button>
+
+        <button onclick="openInviteModal()" class="btn-primary">
+          <i data-lucide="send" size="16"></i> Enviar Convite E-mail
+        </button>
+      </div>
+    </div>
+
+    <!-- Analytics Grid -->
+    <div class="grid-4-col" style="margin-bottom: 28px;">
+      <div class="card">
+        <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">TOTAL DE RESULTADOS</span>
+        <div id="stat-total-count" style="font-family: 'Outfit', sans-serif; font-size: 34px; font-weight: 800; margin: 4px 0;">7</div>
+        <span style="font-size: 12px; color: var(--color-mais); font-weight: 600;">100% dos relatórios gerados</span>
+      </div>
+
+      <div class="card">
+        <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">PERFIL PREDOMINANTE</span>
+        <div style="font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 800; color: #10B981; margin: 4px 0;">Estabilidade (S)</div>
+        <span style="font-size: 12px; color: var(--text-muted);">42% do time corporativo</span>
+      </div>
+
+      <div class="card">
+        <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">MÉDIA DA ENERGIA</span>
+        <div style="font-family: 'Outfit', sans-serif; font-size: 34px; font-weight: 800; color: var(--brand-primary); margin: 4px 0;">+2.4</div>
+        <span style="font-size: 12px; color: var(--color-mais); font-weight: 600;">Energia situacional elevada</span>
+      </div>
+
+      <div class="card">
+        <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">STATUS CONCLUÍDOS</span>
+        <div id="stat-completed-count" style="font-family: 'Outfit', sans-serif; font-size: 34px; font-weight: 800; color: var(--color-mais); margin: 4px 0;">7 / 7</div>
+        <span style="font-size: 12px; color: var(--text-muted);">Prontos para análise de RH</span>
+      </div>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="card" style="padding: 20px 24px; margin-bottom: 28px;">
+      <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 16px;">
+        <div style="flex: 1; min-width: 280px; position: relative;">
+          <i data-lucide="search" size="18" style="position: absolute; left: 14px; top: 12px; color: var(--text-muted);"></i>
+          <input type="text" id="input-search" oninput="filterCandidates()" placeholder="Pesquisar por nome ou e-mail do colaborador..." style="width: 100%; padding: 11px 16px 11px 44px; border-radius: 12px; border: 1.5px solid var(--border-color); font-size: 14px; outline: none;" />
+        </div>
+
+        <div id="results-count-text" style="font-size: 13px; font-weight: 700; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+          7 RESULTADOS
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-right: 4px;">FILTRAR PERFIL:</span>
+        <div id="filter-badges-container" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+      </div>
+    </div>
+
+    <!-- Candidates Table -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>COLABORADOR / NOME E E-MAIL</th>
+            <th>CARGO / EMPRESA</th>
+            <th style="text-align: center;">PERFIL PROFILER (COMBINAÇÃO)</th>
+            <th>DATA DE ENVIO</th>
+            <th>DATA DE RESPOSTA</th>
+            <th style="text-align: right;">AÇÕES DO RH</th>
+          </tr>
+        </thead>
+        <tbody id="candidates-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       3. TEST RESPONDENT FLOW (WELCOME, ROUND 1 - 32 BLOCKS, ROUND 2 - 25 BLOCKS)
+       ============================================================ -->
+  <div id="screen-test-taker" class="hidden" style="width: 100%; max-width: 720px; margin: 32px auto; padding: 0 20px 60px;">
+    <!-- Welcome Step -->
+    <div id="test-step-welcome">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <span style="display: inline-flex; align-items: center; gap: 8px; background: #EEF2FF; color: var(--brand-primary); padding: 6px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; margin-bottom: 14px;">
+          <i data-lucide="compass" size="16"></i> AVALIAÇÃO COMPORTAMENTAL PROFILER
+        </span>
+        <h1 style="font-family: 'Outfit', sans-serif; font-size: 34px; font-weight: 800; margin-bottom: 12px;">
+          Aplicar Mapeamento DISC
+        </h1>
+        <p style="font-size: 16px; color: var(--text-muted);">
+          Insira os dados do colaborador para iniciar a resposta em 2 rodadas.
+        </p>
+      </div>
+
+      <div class="card" style="padding: 32px; margin-bottom: 28px;">
+        <h3 style="font-family: 'Outfit', sans-serif; font-size: 19px; font-weight: 700; margin-bottom: 20px;">
+          Dados do Respondente
+        </h3>
+        <div class="grid-2-col">
+          <div style="grid-column: 1 / -1;">
+            <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px;">Nome Completo</label>
+            <input type="text" id="test-user-name" value="Ana Silva" style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 1.5px solid var(--border-color); font-size: 15px;" />
+          </div>
+          <div style="grid-column: 1 / -1;">
+            <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px;">E-mail Profissional</label>
+            <input type="email" id="test-user-email" value="ana.silva@empresa.com.br" style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 1.5px solid var(--border-color); font-size: 15px;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px;">Empresa</label>
+            <input type="text" id="test-user-company" value="Alpha Psicologia LTDA" style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 1.5px solid var(--border-color); font-size: 15px;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px;">Cargo / Função</label>
+            <input type="text" id="test-user-role" value="Gerente de Produtos" style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 1.5px solid var(--border-color); font-size: 15px;" />
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align: center;">
+        <button onclick="startRound1()" class="btn-primary" style="padding: 14px 28px; font-size: 15px;">
+          Iniciar Rodada 1 <i data-lucide="arrow-right" size="18"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Questions Step -->
+    <div id="test-step-questions" class="hidden">
+      <div style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span id="round-indicator-text" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: var(--brand-primary);">
+            RODADA 1 DE 2 • AUTOPERCEPÇÃO (32 BLOCOS)
+          </span>
+          <span id="block-progress-text" style="font-size: 13px; font-weight: 700;">
+            Bloco 1 de 32 (3%)
+          </span>
+        </div>
+        <div style="width: 100%; height: 8px; background: #E2E8F0; border-radius: 999px; overflow: hidden;">
+          <div id="progress-bar-inner" style="width: 3%; height: 100%; background: var(--brand-primary); transition: width 0.3s;"></div>
+        </div>
+      </div>
+
+      <div class="card" style="padding: 32px;">
+        <h2 id="question-header-title" style="font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 800; margin-bottom: 8px;">
+          Marque os adjetivos que melhor te representam
+        </h2>
+        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 24px;">
+          Escolha obrigatoriamente <strong>1 adjetivo para MAIS (+)</strong> e <strong>1 para MENOS (-)</strong>.
+        </p>
+
+        <div id="adjectives-list-container"></div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 28px;">
+          <button id="btn-prev-block" onclick="prevBlock()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-weight: 700; font-size: 14px;">
+            ← Bloco Anterior
+          </button>
+
+          <button id="btn-next-block" onclick="nextBlock()" disabled class="btn-primary">
+            Próximo Bloco <i data-lucide="arrow-right" size="18"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       4. EXECUTIVE REPORT VIEWER
+       ============================================================ -->
+  <div id="screen-report" class="hidden" style="width: 100%;">
+    <div style="position: sticky; top: 0; z-index: 200; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); padding: 14px 32px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button onclick="navToDashboard()" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: #FFFFFF; cursor: pointer; font-size: 13px; font-weight: 700;">
+          ← Voltar ao Painel RH
+        </button>
+        <span id="report-title-name" style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 800;">
+          Relatório Profiler — Ana Silva
+        </span>
+      </div>
+
+      <button onclick="downloadExecutivePDF()" class="btn-primary">
+        <i data-lucide="download" size="15"></i> Baixar Relatório PDF
+      </button>
+    </div>
+
+    <!-- Report Page Tabs -->
+    <div style="width: 100%; max-width: 1200px; margin: 24px auto 12px; padding: 0 24px;">
+      <div style="display: flex; gap: 8px; background: #E2E8F0; padding: 6px; border-radius: 16px; overflow-x: auto;">
+        <button class="tab-btn active" onclick="switchReportTab(1)">Pág 1: Perfil Combinado</button>
+        <button class="tab-btn" onclick="switchReportTab(2)">Pág 2: Análise Detalhada</button>
+        <button class="tab-btn" onclick="switchReportTab(3)">Pág 3: Subfatores</button>
+        <button class="tab-btn" onclick="switchReportTab(4)">Pág 4: Gráficos & Gap</button>
+        <button class="tab-btn" onclick="switchReportTab(5)">Pág 5: Indicadores Situacionais</button>
+        <button class="tab-btn" onclick="switchReportTab(6)">Pág 6: Plano de Ação Metas</button>
+      </div>
+    </div>
+
+    <div id="report-tab-content-container" style="width: 100%; max-width: 1200px; margin: 0 auto; padding: 10px 24px 60px;"></div>
+  </div>
+
+  <!-- CONTAINER COMPLETO OCULTO PARA GERAR PDF DE 6 PÁGINAS -->
+  <div id="pdf-export-hidden-container" class="hidden" style="position: absolute; left: -9999px; top: 0;"></div>
+
+  <!-- INVITE MODAL -->
+  <div id="modal-invite" class="hidden" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(6px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px;">
+    <div class="card" style="width: 460px; max-width: 100%; padding: 32px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 800;">
+          Enviar Convite do Profiler DISC
+        </h3>
+        <button onclick="closeInviteModal()" style="background: none; border: none; cursor: pointer; color: var(--text-muted);">
+          <i data-lucide="x" size="20"></i>
+        </button>
+      </div>
+
+      <form id="invite-form">
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 4px;">Nome do Colaborador</label>
+          <input type="text" id="invite-name" required placeholder="Ex: João Roberto Santos" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid var(--border-color); font-size: 14px;" />
+        </div>
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 4px;">E-mail para Envio</label>
+          <input type="email" id="invite-email" required placeholder="joao.santos@empresa.com.br" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid var(--border-color); font-size: 14px;" />
+        </div>
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 4px;">Cargo / Função</label>
+          <input type="text" id="invite-role" placeholder="Ex: Analista de Vendas" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid var(--border-color); font-size: 14px;" />
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+          <button type="button" onclick="closeInviteModal()" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border-color); background: none; font-weight: 700; cursor: pointer;">Cancelar</button>
+          <button type="submit" class="btn-primary" style="padding: 10px 22px;">Enviar Link por E-mail</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       JAVASCRIPT ENGINE & SYSTEM CONTROLLER
+       ============================================================ -->
+  <script>
+    // Supabase Live Client
+    const SUPABASE_URL = "https://lcmatcxxvipccydrvbqv.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjbWF0Y3h4dmlwY2N5ZHJ2YnF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MzM5MzUsImV4cCI6MjEwMjEwOTkzNX0.6JzydvCwYfh5WR2Rc9e64f6N0upmRQ8FX-jO5wuUja4";
+
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // State Variables
+    let authUser = null;
+    let selectedFilter = "TODOS";
+    let candidatesList = [
+      { id: "cand_1", name: "Aline Cristina da Silva", email: "alinecristina38345@gmail.com", role: "Analista de RH", company: "Alpha Psicologia LTDA", profileBadge: "CE", primaryKey: "C", secondaryKey: "E", sendDate: "11/12/2025", answerDate: "11/12/2025" },
+      { id: "cand_2", name: "Vanilza Felipe de Paula", email: "vanilzapaula225@gmail.com", role: "Coordenadora Operacional", company: "Alpha Psicologia LTDA", profileBadge: "EC", primaryKey: "E", secondaryKey: "C", sendDate: "12/01/2026", answerDate: "12/01/2026" },
+      { id: "cand_3", name: "Abdias Anderson de Oliveira", email: "abdiascontabeis@hotmail.com", role: "Contador Sênior", company: "Alpha Psicologia LTDA", profileBadge: "PA", primaryKey: "P", secondaryKey: "A", sendDate: "15/10/2025", answerDate: "15/10/2025" },
+      { id: "cand_4", name: "Abraão Vitório da Silva", email: "abraaovitorio04@gmail.com", role: "Desenvolvedor Full Stack", company: "Alpha Psicologia LTDA", profileBadge: "PC", primaryKey: "P", secondaryKey: "C", sendDate: "18/04/2026", answerDate: "18/04/2026" },
+      { id: "cand_5", name: "Adalberto Alves da Costa", email: "secretario.semec@ribeiroodasneves.mg.gov.br", role: "Secretário Executivo", company: "Prefeitura Municipal", profileBadge: "EC", primaryKey: "E", secondaryKey: "C", sendDate: "21/08/2025", answerDate: "21/08/2025" },
+      { id: "cand_6", name: "Ademir Roberto Neto", email: "ademiroberto@hotmail.com", role: "Gerente Comercial", company: "Alpha Psicologia LTDA", profileBadge: "CE", primaryKey: "C", secondaryKey: "E", sendDate: "30/10/2025", answerDate: "30/10/2025" },
+      { id: "cand_7", name: "Adileia Pereira de Souza Miranda", email: "adileiapereira62@gmail.com", role: "Consultora Organizacional", company: "Alpha Psicologia LTDA", profileBadge: "PAE", primaryKey: "P", secondaryKey: "A", sendDate: "11/12/2025", answerDate: "11/12/2025" }
+    ];
+
+    let currentRound = 1;
+    let currentBlockIdx = 0;
+    let r1Answers = {};
+    let r2Answers = {};
+    let activeReportTab = 1;
+    let activeReportCandidate = null;
+
+    // DISC Questions Blocks Data (25 DISC Blocks)
+    const DISC_WORDS = [
+      ["Objetiva", "Exagerada", "Estável", "Exata"],
+      ["Inovadora", "Comunicativa", "Agradável", "Elegante"],
+      ["Egocêntrica", "Tagarela", "Acomodada", "Estrutural"],
+      ["Exigente", "Sociável", "Leal", "Rigorosa"],
+      ["Audaciosa", "Extrovertida", "Casual", "Meticulosa"],
+      ["Assertiva", "Otimista", "Paciente", "Prudente"],
+      ["Autoritária", "Extravagante", "Modesta", "Dependente"],
+      ["Inspira Confiança", "Convincente", "Compreensiva", "Pontual"],
+      ["Força de Vontade", "Espontânea", "Satisfeita", "Conservadora"],
+      ["Direta", "Jovial", "Moderada", "Processual"],
+      ["Fazedora", "Inspirada", "Persistente", "Perfeccionista"],
+      ["Enérgica", "Entusiasmada", "Calma", "Disciplinada"],
+      ["Intimidante", "Sem Cerimônia", "Reservada", "Intransigente"],
+      ["Pioneira", "Divertida", "Tranquila", "Convencional"],
+      ["Agressiva", "Expansiva", "Possessiva", "Julgadora"],
+      ["Firme", "Expressiva", "Amável", "Formal"],
+      ["Vigorosa", "Calorosa", "Gentil", "Preocupada"],
+      ["Ambiciosa", "Reluzente", "Regulada", "Calculista"],
+      ["Determinada", "Confiante", "Constante", "Precisa"],
+      ["Apressada", "Persuasiva", "Cuidadosa", "Metódica"],
+      ["Competitiva", "Política", "Cooperativa", "Diplomática"],
+      ["Decidida", "Flexível", "Previsível", "Sistemática"],
+      ["Visionária", "Criativa", "Ponderada", "Detalhista"],
+      ["Ousada", "Sedutora", "Harmonizadora", "Cautelosa"],
+      ["Inquisitiva", "Dada", "Rígida consigo", "Cética"]
+    ];
+
+    const PROFILE_KEYS = ["D", "I", "S", "C"];
+    const DISC_BLOCKS = DISC_WORDS.map((words, i) => ({
+      type: "disc",
+      i,
+      adjectives: words.map((text, j) => ({ text, key: PROFILE_KEYS[j] }))
+    }));
+
+    const SITUATIONAL = {
+      energia: { key: "energia", adjectives: [{ text: "Disposta", cat: "alta" }, { text: "Cansada", cat: "baixa" }, { text: "Dinâmica", cat: "alta" }, { text: "Sonolenta", cat: "baixa" }] },
+      flexibilidade: { key: "flexibilidade", adjectives: [{ text: "Adaptável", cat: "alta" }, { text: "Rígida", cat: "baixa" }, { text: "Flexível", cat: "alta" }, { text: "Teimosa", cat: "baixa" }] },
+      positividade: { key: "positividade", adjectives: [{ text: "Otimista", cat: "alta" }, { text: "Entusiasmada", cat: "alta" }, { text: "Desanimada", cat: "baixa" }, { text: "Desesperançosa", cat: "baixa" }] },
+      moral: { key: "moral", adjectives: [{ text: "Crítico", cat: "baixa" }, { text: "Leal", cat: "alta" }, { text: "Responsável", cat: "alta" }, { text: "Indiferente", cat: "baixa" }] },
+      aproveitamento: { key: "aproveitamento", adjectives: [{ text: "Eficiente", cat: "alta" }, { text: "Produtiva", cat: "alta" }, { text: "Desmotivada", cat: "baixa" }, { text: "Insegura", cat: "baixa" }] },
+      resiliencia: { key: "resiliencia", adjectives: [{ text: "Exausta", cat: "baixa" }, { text: "Forte", cat: "alta" }, { text: "Sobrecarregada", cat: "baixa" }, { text: "Perseverante", cat: "alta" }] },
+      equipe: { key: "equipe", adjectives: [{ text: "Colaborativa", cat: "alta" }, { text: "Individualista", cat: "baixa" }, { text: "Comunicativa", cat: "alta" }, { text: "Impaciente", cat: "baixa" }] }
+    };
+
+    // EXACT 32 BLOCKS ORDER IN ROUND 1 (25 DISC + 7 SITUATIONAL CAMOUFLAGED)
+    const ROUND1_ORDER = [
+      { type: "disc", i: 0 }, { type: "disc", i: 1 }, { type: "sit", key: "energia" },
+      { type: "disc", i: 2 }, { type: "disc", i: 3 }, { type: "disc", i: 4 }, { type: "sit", key: "flexibilidade" },
+      { type: "disc", i: 5 }, { type: "disc", i: 6 }, { type: "disc", i: 7 }, { type: "sit", key: "positividade" },
+      { type: "disc", i: 8 }, { type: "disc", i: 9 }, { type: "disc", i: 10 }, { type: "sit", key: "moral" },
+      { type: "disc", i: 11 }, { type: "disc", i: 12 }, { type: "disc", i: 13 }, { type: "sit", key: "aproveitamento" },
+      { type: "disc", i: 14 }, { type: "disc", i: 15 }, { type: "disc", i: 16 }, { type: "sit", key: "resiliencia" },
+      { type: "disc", i: 17 }, { type: "disc", i: 18 }, { type: "disc", i: 19 }, { type: "sit", key: "equipe" },
+      { type: "disc", i: 20 }, { type: "disc", i: 21 }, { type: "disc", i: 22 }, { type: "disc", i: 23 }, { type: "disc", i: 24 }
+    ];
+
+    // EXACT 25 BLOCKS ORDER IN ROUND 2 (PERCEPÇÃO EXTERNA)
+    const ROUND2_ORDER = Array.from({ length: 25 }, (_, i) => ({ type: "disc", i }));
+
+    // Init Lucide
+    lucide.createIcons();
+
+    // DOM Ready Initialization
+    document.addEventListener("DOMContentLoaded", () => {
+      renderFilterBadges();
+      
+      supabaseClient.auth.getSession().then(({ data }) => {
+        if (data && data.session) {
+          setLoggedInState(data.session.user);
+        }
+      });
+    });
+
+    // Auth Form Logic
+    let isSignupMode = false;
+    document.getElementById("toggle-auth-mode-btn").addEventListener("click", () => {
+      isSignupMode = !isSignupMode;
+      document.getElementById("auth-error-alert").classList.add("hidden");
+      if (isSignupMode) {
+        document.getElementById("auth-title").innerText = "Criar Conta de Gestão RH";
+        document.getElementById("field-name-container").classList.remove("hidden");
+        document.getElementById("btn-submit-auth").innerText = "Cadastrar Gestor RH";
+        document.getElementById("toggle-auth-mode-btn").innerText = "Já possui conta? Fazer Login";
+      } else {
+        document.getElementById("auth-title").innerText = "Autenticação de Acesso RH";
+        document.getElementById("field-name-container").classList.add("hidden");
+        document.getElementById("btn-submit-auth").innerText = "Entrar no Sistema";
+        document.getElementById("toggle-auth-mode-btn").innerText = "Criar Nova Conta de RH no Supabase";
+      }
+    });
+
+    document.getElementById("auth-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const alertBox = document.getElementById("auth-error-alert");
+      alertBox.classList.add("hidden");
+      const email = document.getElementById("input-auth-email").value;
+      const password = document.getElementById("input-auth-password").value;
+      const name = document.getElementById("input-auth-name").value;
+      const btn = document.getElementById("btn-submit-auth");
+
+      btn.innerText = "Autenticando...";
+      btn.disabled = true;
+
+      try {
+        if (isSignupMode) {
+          const { data, error } = await supabaseClient.auth.signUp({
+            email,
+            password,
+            options: { data: { full_name: name || "Gestor RH" } }
+          });
+          if (error) throw error;
+          setLoggedInState(data.user || { email });
+        } else {
+          const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          setLoggedInState(data.user || { email });
+        }
+      } catch (err) {
+        alertBox.classList.remove("hidden");
+        document.getElementById("auth-error-msg").innerText = err.message || "Erro de login.";
+      } finally {
+        btn.innerText = isSignupMode ? "Cadastrar Gestor RH" : "Entrar no Sistema";
+        btn.disabled = false;
+      }
+    });
+
+    async function loadCandidatesFromSupabase() {
+      try {
+        const { data, error } = await supabaseClient
+          .from("candidates")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          candidatesList = data.map(row => ({
+            id: row.id,
+            name: row.name,
+            email: row.email,
+            role: row.role || "Colaborador",
+            company: row.company_name || "Alpha Psicologia LTDA",
+            profileBadge: row.profile_badge || "Pendente",
+            primaryKey: row.primary_key || "D",
+            secondaryKey: row.secondary_key || "I",
+            sendDate: row.send_date ? new Date(row.send_date).toLocaleDateString("pt-BR") : "Pendente",
+            answerDate: row.answer_date ? new Date(row.answer_date).toLocaleDateString("pt-BR") : "Pendente"
+          }));
+        }
+      } catch (err) {
+        console.warn("Usando lista local:", err);
+      }
+      renderCandidatesTable();
+    }
+
+    function setLoggedInState(user) {
+      authUser = user;
+      document.getElementById("screen-login").classList.add("hidden");
+      document.getElementById("screen-dashboard").classList.remove("hidden");
+      document.getElementById("screen-test-taker").classList.add("hidden");
+      document.getElementById("screen-report").classList.add("hidden");
+
+      document.getElementById("auth-nav-menu").classList.remove("hidden");
+      document.getElementById("user-info-badge").classList.remove("hidden");
+      document.getElementById("auth-logout-btn").classList.remove("hidden");
+      document.getElementById("locked-auth-badge").classList.add("hidden");
+
+      document.getElementById("user-email-text").innerText = user.email;
+      document.getElementById("active-user-display").innerText = user.email;
+
+      loadCandidatesFromSupabase();
+    }
+
+    function setLoggedOutState() {
+      authUser = null;
+      document.getElementById("screen-login").classList.remove("hidden");
+      document.getElementById("screen-dashboard").classList.add("hidden");
+      document.getElementById("screen-test-taker").classList.add("hidden");
+      document.getElementById("screen-report").classList.add("hidden");
+
+      document.getElementById("auth-nav-menu").classList.add("hidden");
+      document.getElementById("user-info-badge").classList.add("hidden");
+      document.getElementById("auth-logout-btn").classList.add("hidden");
+      document.getElementById("locked-auth-badge").classList.remove("hidden");
+    }
+
+    async function handleLogout() {
+      await supabaseClient.auth.signOut();
+      setLoggedOutState();
+    }
+
+    function navToDashboard() {
+      if (authUser) {
+        document.getElementById("screen-dashboard").classList.remove("hidden");
+        document.getElementById("screen-test-taker").classList.add("hidden");
+        document.getElementById("screen-report").classList.add("hidden");
+      }
+    }
+
+    // Filter Badges
+    const filterOptions = ["TODOS", "D", "I", "S", "C", "CE", "EC", "PA", "PC"];
+    function renderFilterBadges() {
+      const container = document.getElementById("filter-badges-container");
+      container.innerHTML = filterOptions.map(f => `
+        <button onclick="setFilter('${f}')" style="padding: 6px 16px; border-radius: 999px; border: 1.5px solid ${selectedFilter === f ? '#5B79DD' : '#E2E8F0'}; background: ${selectedFilter === f ? '#5B79DD' : '#F8FAFC'}; color: ${selectedFilter === f ? '#FFFFFF' : '#64748B'}; font-size: 12px; font-weight: 700; cursor: pointer;">
+          ${f === 'TODOS' ? 'Todos os Perfis' : f}
+        </button>
+      `).join('');
+    }
+
+    function setFilter(f) {
+      selectedFilter = f;
+      renderFilterBadges();
+      renderCandidatesTable();
+    }
+
+    function filterCandidates() {
+      renderCandidatesTable();
+    }
+
+    function renderCandidatesTable() {
+      const search = document.getElementById("input-search").value.toLowerCase();
+      const filtered = candidatesList.filter(c => {
+        const matchesSearch = c.name.toLowerCase().includes(search) || c.email.toLowerCase().includes(search);
+        const matchesFilter = selectedFilter === "TODOS" || c.profileBadge.includes(selectedFilter);
+        return matchesSearch && matchesFilter;
+      });
+
+      document.getElementById("results-count-text").innerText = `${filtered.length} RESULTADOS`;
+      document.getElementById("stat-total-count").innerText = candidatesList.length;
+
+      document.getElementById("candidates-table-body").innerHTML = filtered.map(cand => `
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <div style="width: 42px; height: 42px; border-radius: 999px; background: #5B79DD; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px;">
+                ${cand.name.substring(0,2).toUpperCase()}
+              </div>
+              <div>
+                <div style="font-size: 14px; font-weight: 700; color: #0F172A;">${cand.name}</div>
+                <div style="font-size: 12px; color: #4F46E5;">${cand.email}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div style="font-size: 13px; font-weight: 600;">${cand.role}</div>
+            <div style="font-size: 12px; color: #64748B;">${cand.company}</div>
+          </td>
+          <td style="text-align: center;">
+            <span class="badge-profile" style="background: rgba(91, 121, 221, 0.15); color: #5B79DD; border: 1.5px solid #5B79DD;">
+              ${cand.profileBadge}
+            </span>
+          </td>
+          <td style="font-size: 13px; color: #64748B;">${cand.sendDate}</td>
+          <td style="font-size: 13px; color: #64748B;">${cand.answerDate}</td>
+          <td style="text-align: right;">
+            <div style="display: inline-flex; gap: 6px;">
+              <button onclick="viewReport('${cand.id}')" style="padding: 7px 12px; border-radius: 8px; border: 1px solid #E2E8F0; background: #FFFFFF; font-size: 12px; font-weight: 700; cursor: pointer;">
+                Ver Relatório
+              </button>
+              <button onclick="downloadCandidatePDF('${cand.name}')" style="padding: 7px 12px; border-radius: 8px; border: none; background: #5B79DD; color: #FFFFFF; font-size: 12px; font-weight: 700; cursor: pointer;">
+                PDF
+              </button>
+              <button onclick="deleteCandidate('${cand.id}')" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid #E2E8F0; background: #FFFFFF; color: #EF4444; cursor: pointer;">
+                <i data-lucide="trash-2" size="14"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    async function deleteCandidate(id) {
+      if (confirm("Deseja realmente remover este registro?")) {
+        try {
+          await supabaseClient.from("candidates").delete().eq("id", id);
+        } catch (err) {}
+        candidatesList = candidatesList.filter(c => c.id !== id);
+        renderCandidatesTable();
+      }
+    }
+
+    // Modal Invite
+    function openInviteModal() { document.getElementById("modal-invite").classList.remove("hidden"); }
+    function closeInviteModal() { document.getElementById("modal-invite").classList.add("hidden"); }
+
+    document.getElementById("invite-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("invite-name").value;
+      const email = document.getElementById("invite-email").value;
+      const role = document.getElementById("invite-role").value || "Colaborador";
+
+      try {
+        await supabaseClient.from("candidates").insert([{
+          name, email, role, company_name: "Alpha Psicologia LTDA", status: "Enviado", profile_badge: "Pendente"
+        }]);
+        await loadCandidatesFromSupabase();
+      } catch (err) {}
+
+      closeInviteModal();
+      alert(`Convite enviado para ${email}!`);
+    });
+
+    // Test Taker Flow
+    function startNewTestFlow() {
+      document.getElementById("screen-dashboard").classList.add("hidden");
+      document.getElementById("screen-test-taker").classList.remove("hidden");
+      document.getElementById("test-step-welcome").classList.remove("hidden");
+      document.getElementById("test-step-questions").classList.add("hidden");
+    }
+
+    function startRound1() {
+      currentRound = 1;
+      currentBlockIdx = 0;
+      r1Answers = {};
+      document.getElementById("test-step-welcome").classList.add("hidden");
+      document.getElementById("test-step-questions").classList.remove("hidden");
+      renderBlockQuestions();
+    }
+
+    function renderBlockQuestions() {
+      const order = currentRound === 1 ? ROUND1_ORDER : ROUND2_ORDER;
+      const totalBlocks = order.length;
+      const currentItem = order[currentBlockIdx];
+      const answers = currentRound === 1 ? r1Answers : r2Answers;
+      const currentAns = answers[currentBlockIdx] || {};
+
+      let adjectives = [];
+      if (currentItem.type === "disc") {
+        adjectives = DISC_WORDS[currentItem.i].map((text, j) => ({ text, key: PROFILE_KEYS[j] }));
+      } else {
+        adjectives = SITUATIONAL[currentItem.key].adjectives;
+      }
+
+      document.getElementById("round-indicator-text").innerText = currentRound === 1 ? `RODADA 1 DE 2 • AUTOPERCEPÇÃO (32 BLOCOS)` : `RODADA 2 DE 2 • PERCEPÇÃO EXTERNA (25 BLOCOS)`;
+      document.getElementById("block-progress-text").innerText = `Bloco ${currentBlockIdx + 1} de ${totalBlocks} (${Math.round(((currentBlockIdx+1)/totalBlocks)*100)}%)`;
+      document.getElementById("progress-bar-inner").style.width = `${Math.round(((currentBlockIdx+1)/totalBlocks)*100)}%`;
+
+      const container = document.getElementById("adjectives-list-container");
+      container.innerHTML = adjectives.map((adj, i) => {
+        const isMais = currentAns.mais === i;
+        const isMenos = currentAns.menos === i;
+        const rowClass = isMais ? "adjective-row mais" : isMenos ? "adjective-row menos" : "adjective-row";
+
+        return `
+          <div class="${rowClass}">
+            <span style="font-size: 16px; font-weight: ${isMais || isMenos ? '700' : '500'}; color: ${isMais ? '#10B981' : isMenos ? '#EF4444' : '#0F172A'};">
+              ${adj.text}
+            </span>
+            <div style="display: flex; gap: 10px;">
+              <button onclick="selectAnswer('mais', ${i})" style="padding: 8px 14px; border-radius: 10px; border: 1.5px solid ${isMais ? '#10B981' : '#E2E8F0'}; background: ${isMais ? '#10B981' : '#FFFFFF'}; color: ${isMais ? '#FFFFFF' : '#64748B'}; font-size: 12px; font-weight: 700; cursor: pointer;">
+                + MAIS
+              </button>
+              <button onclick="selectAnswer('menos', ${i})" style="padding: 8px 14px; border-radius: 10px; border: 1.5px solid ${isMenos ? '#EF4444' : '#E2E8F0'}; background: ${isMenos ? '#EF4444' : '#FFFFFF'}; color: ${isMenos ? '#FFFFFF' : '#64748B'}; font-size: 12px; font-weight: 700; cursor: pointer;">
+                - MENOS
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById("btn-next-block").disabled = !(currentAns.mais !== undefined && currentAns.menos !== undefined);
+    }
+
+    function selectAnswer(type, idx) {
+      const answers = currentRound === 1 ? r1Answers : r2Answers;
+      if (!answers[currentBlockIdx]) answers[currentBlockIdx] = {};
+
+      const current = answers[currentBlockIdx];
+      if (type === 'mais') {
+        current.mais = current.mais === idx ? undefined : idx;
+        if (current.menos === idx) current.menos = undefined;
+      } else {
+        current.menos = current.menos === idx ? undefined : idx;
+        if (current.mais === idx) current.mais = undefined;
+      }
+
+      renderBlockQuestions();
+    }
+
+    function prevBlock() {
+      if (currentBlockIdx > 0) {
+        currentBlockIdx--;
+        renderBlockQuestions();
+      }
+    }
+
+    function nextBlock() {
+      const maxIdx = currentRound === 1 ? 31 : 24;
+      if (currentBlockIdx < maxIdx) {
+        currentBlockIdx++;
+        renderBlockQuestions();
+      } else if (currentRound === 1) {
+        currentRound = 2;
+        currentBlockIdx = 0;
+        alert("Rodada 1 (32 blocos) concluída com sucesso! Iniciando Rodada 2 (25 blocos de Percepção Externa).");
+        renderBlockQuestions();
+      } else {
+        finishAssessment();
+      }
+    }
+
+    async function finishAssessment() {
+      const name = document.getElementById("test-user-name").value;
+      const email = document.getElementById("test-user-email").value;
+      const company = document.getElementById("test-user-company").value;
+      const role = document.getElementById("test-user-role").value;
+
+      const payload = {
+        name,
+        email,
+        company_name: company,
+        role,
+        status: "Concluído",
+        profile_badge: "CE",
+        primary_key: "C",
+        secondary_key: "E",
+        answer_date: new Date().toISOString(),
+        r1_responses: r1Answers,
+        r2_responses: r2Answers
+      };
+
+      try {
+        const { data: existing } = await supabaseClient
+          .from("candidates")
+          .select("id")
+          .eq("email", email)
+          .maybeSingle();
+
+        let candData = null;
+        if (existing && existing.id) {
+          const { data } = await supabaseClient.from("candidates").update(payload).eq("id", existing.id).select().single();
+          candData = data;
+        } else {
+          const { data } = await supabaseClient.from("candidates").insert([payload]).select().single();
+          candData = data;
+        }
+
+        if (candData) {
+          alert("Mapeamento comportamental salvo com sucesso no banco de dados do Supabase!");
+          await loadCandidatesFromSupabase();
+        }
+      } catch (err) {
+        console.warn("Erro ao salvar no Supabase:", err);
+      }
+
+      viewReport(candidatesList[0].id);
+    }
+
+    // View Report & PDF Generator
+    function viewReport(candId) {
+      activeReportCandidate = candidatesList.find(c => c.id === candId) || candidatesList[0];
+      document.getElementById("screen-dashboard").classList.add("hidden");
+      document.getElementById("screen-test-taker").classList.add("hidden");
+      document.getElementById("screen-report").classList.remove("hidden");
+      document.getElementById("report-title-name").innerText = `Relatório Profiler — ${activeReportCandidate.name}`;
+
+      switchReportTab(1);
+    }
+
+    function switchReportTab(tabNum) {
+      activeReportTab = tabNum;
+      document.querySelectorAll(".tab-btn").forEach((btn, i) => {
+        btn.classList.toggle("active", i + 1 === tabNum);
+      });
+
+      const container = document.getElementById("report-tab-content-container");
+      container.innerHTML = generateReportPageHTML(tabNum, activeReportCandidate || candidatesList[0]);
+    }
+
+    function generateReportPageHTML(tabNum, candidate) {
+      return `
+        <div class="card" style="padding: 32px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 800; color: var(--brand-purple);">
+              PÁGINA ${tabNum} DE 6
+            </span>
+            <span style="font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 800;">
+              ${tabNum === 1 ? 'Capa Executiva & Perfil Combinado' : tabNum === 2 ? 'Análise Detalhada do Perfil' : tabNum === 3 ? 'Subfatores de Desempenho' : tabNum === 4 ? 'Gráficos Comparativos & Gap' : tabNum === 5 ? 'Indicadores Situacionais' : 'Plano de Ação Integrado'}
+            </span>
+          </div>
+
+          <div style="background: linear-gradient(135deg, #5B79DD 0%, #4F46E5 100%); border-radius: 20px; padding: 28px; color: #FFFFFF; margin-bottom: 20px;">
+            <span style="background: rgba(255,255,255,0.2); font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 999px;">
+              PERFIL PROFILER (${candidate.profileBadge || 'CE'})
+            </span>
+            <h1 style="font-family: 'Outfit', sans-serif; font-size: 30px; font-weight: 800; margin: 10px 0 6px;">
+              ${candidate.name} — ${candidate.profileBadge || 'CE'} (Conformidade + Estabilidade)
+            </h1>
+            <p style="font-size: 15px; opacity: 0.95; line-height: 1.6;">
+              Mapeamento de tendências comportamentais, ritmo de trabalho, tomada de decisão e resposta ao ambiente corporativo.
+            </p>
+          </div>
+
+          <div class="grid-2-col">
+            <div style="background: var(--bg-mais); border: 1.5px solid var(--border-mais); border-radius: 16px; padding: 20px;">
+              <h4 style="color: var(--color-mais); font-size: 16px; font-weight: 800; margin-bottom: 10px;">Pontos Fortes</h4>
+              <ul style="padding-left: 18px; font-size: 14px; line-height: 1.6;">
+                <li>Alta precisão técnica e atenção aos detalhes</li>
+                <li>Excelente organização de processos</li>
+                <li>Lealdade corporativa e constância</li>
+              </ul>
+            </div>
+
+            <div style="background: var(--bg-menos); border: 1.5px solid var(--border-menos); border-radius: 16px; padding: 20px;">
+              <h4 style="color: var(--color-menos); font-size: 16px; font-weight: 800; margin-bottom: 10px;">Pontos de Atenção</h4>
+              <ul style="padding-left: 18px; font-size: 14px; line-height: 1.6;">
+                <li>Hesitação em tomadas de decisão sob pressão</li>
+                <li>Perfeccionismo excessivo</li>
+                <li>Resistência a mudanças repentinas sem prévio aviso</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function downloadCandidatePDF(name) {
+      downloadExecutivePDF(name);
+    }
+
+    function downloadExecutivePDF(overrideName) {
+      const cand = activeReportCandidate || candidatesList[0];
+      const targetName = overrideName || cand.name;
+
+      // Monta o container completo com as 6 páginas formato A4 para exportação perfeita
+      const exportContainer = document.getElementById("pdf-export-hidden-container");
+      exportContainer.innerHTML = `
+        <div style="width: 210mm; background: #F8FAFC;">
+          ${[1, 2, 3, 4, 5, 6].map(page => `
+            <div class="pdf-page-container">
+              <div style="border-bottom: 2px solid #5B79DD; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800; color: #5B79DD;">
+                    SÓLIDES PROFILER • LAUDO EXECUTIVO (PÁGINA ${page} DE 6)
+                  </span>
+                  <h2 style="font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 800; color: #0F172A; margin: 2px 0 0;">
+                    Relatório DISC — ${targetName}
+                  </h2>
+                </div>
+                <div style="text-align: right; font-size: 12px; color: #64748B;">
+                  <div>${cand.company}</div>
+                  <div>Data: ${cand.answerDate}</div>
+                </div>
+              </div>
+
+              ${generateReportPageHTML(page, cand)}
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      exportContainer.classList.remove("hidden");
+
+      const opt = {
+        margin: 0,
+        filename: `Relatorio_DISC_Profiler_${targetName.replace(/\s+/g, '_')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+      };
+
+      html2pdf().set(opt).from(exportContainer).save().then(() => {
+        exportContainer.classList.add("hidden");
+      });
+    }
+  </script>
+</body>
+</html>

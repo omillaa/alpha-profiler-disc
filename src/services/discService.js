@@ -34,7 +34,6 @@ function normalizeCandidateFromDB(row) {
 
 export async function signInWithEmail(email, password) {
   if (!isSupabaseConfigured) {
-    // Modo Fallback Local
     const mockUser = { id: "user_rh_demo", email, name: email.split("@")[0], role: "rh_admin" };
     localStorage.setItem("disc_auth_user", JSON.stringify(mockUser));
     return { user: mockUser, error: null };
@@ -211,7 +210,6 @@ export async function saveAssessmentResult(r1Responses, r2Responses, userInfo) {
 
   if (isSupabaseConfigured) {
     try {
-      // Atualiza ou insere o candidato
       const payload = {
         name: userInfo.name,
         email: userInfo.email,
@@ -230,13 +228,35 @@ export async function saveAssessmentResult(r1Responses, r2Responses, userInfo) {
         situational_scores: results.situational
       };
 
-      const { data: candData, error: candError } = await supabase
+      // Busca primeiro se o candidato com este email já existe no Supabase
+      const { data: existing } = await supabase
         .from("candidates")
-        .upsert(payload, { onConflict: "email" })
-        .select()
-        .single();
+        .select("id")
+        .eq("email", userInfo.email)
+        .maybeSingle();
 
-      if (candError) throw candError;
+      let candData = null;
+
+      if (existing && existing.id) {
+        // UPDATE se já existir
+        const { data, error } = await supabase
+          .from("candidates")
+          .update(payload)
+          .eq("id", existing.id)
+          .select()
+          .single();
+        if (error) throw error;
+        candData = data;
+      } else {
+        // INSERT se for um novo candidato
+        const { data, error } = await supabase
+          .from("candidates")
+          .insert([payload])
+          .select()
+          .single();
+        if (error) throw error;
+        candData = data;
+      }
 
       // Salva o laudo completo na tabela de laudos (assessments)
       if (candData && candData.id) {
