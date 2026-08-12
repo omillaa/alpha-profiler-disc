@@ -1,0 +1,1 @@
+ import DiscPrototype from './disc-prototype'; export default function App() { return <DiscPrototype />; }
